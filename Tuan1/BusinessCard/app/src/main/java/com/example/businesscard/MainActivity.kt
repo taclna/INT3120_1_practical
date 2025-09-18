@@ -3,18 +3,9 @@ package com.example.businesscard
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import com.example.businesscard.ui.theme.BusinessCardTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,42 +13,60 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.layout.wrapContentHeight
-
+import androidx.compose.material3.Icon
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Share
+import com.example.businesscard.ui.theme.BusinessCardTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             BusinessCardTheme {
-                Surface (
-                    modifier = Modifier
-                        .fillMaxSize(),
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    GreetingImage(
-                        message_01 = stringResource(R.string.text_1),
-                        message_02 = stringResource(R.string.text_2),
-                        message_03 = stringResource(R.string.text_3),
-                        modifier = Modifier
-                    )
+                    // Dùng Box để MainPart ở giữa, SubPart ở cuối
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+
+                        ) {
+                        MainPart(
+                            full_name = "LE CHI ANH TUAN",
+                            title = "Student",
+                            modifier = Modifier.align(Alignment.Center) // căn giữa
+                        )
+
+                        SubPart(
+                            phone_number = "0981167912",
+                            social_media_handle = "tacl_na",
+                            email_address = "23020703@vnu.edu.vn",
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter) // xuống cuối cùng
+                                .padding(bottom = 24.dp)
+                        )
+                    }
                 }
             }
         }
     }
 }
 
-
 @Composable
-fun GreetingImage(message_01 : String, message_02 : String,message_03 : String, modifier : Modifier = Modifier) {
-    val image = painterResource(R.drawable.bg_compose_background)
+fun MainPart(full_name: String, title: String, modifier: Modifier = Modifier) {
+    val image = painterResource(R.drawable.ic_launcher_background)
     Column(
-        modifier = Modifier.fillMaxSize()
+        modifier = modifier,
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Image(
             painter = image,
@@ -68,50 +77,70 @@ fun GreetingImage(message_01 : String, message_02 : String,message_03 : String, 
                 .wrapContentHeight()
         )
 
-        GreetingText(
-            message_01 = message_01,
-            message_02 = message_02,
-            message_03 = message_03,
-            modifier = Modifier
-                .fillMaxSize()
-        )
-    }
-}
-
-@Composable
-fun GreetingText(message_01: String, message_02 : String, message_03 : String, modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier
-    ) {
         Text(
-            text = message_01,
-            fontSize = 20.sp,
-            textAlign = TextAlign.Start,
+            text = full_name,
+            fontSize = 30.sp,
+            textAlign = TextAlign.Center,
             modifier = Modifier.padding(20.dp)
         )
 
-        Text (
-            text = message_02,
-            fontSize = 10.sp,
-            modifier = Modifier
-                .padding(10.dp)
-                .align(alignment = Alignment.CenterHorizontally)
-        )
-
-        Text (
-            text = message_03,
-            fontSize = 10.sp,
-            modifier = Modifier
-                .padding(10.dp)
-                .align(alignment = Alignment.CenterHorizontally)
+        Text(
+            text = title,
+            textAlign = TextAlign.Center,
+            fontSize = 20.sp
         )
     }
 }
 
-@Preview(showBackground = true)
 @Composable
-fun GreetingPreview() {
-    BusinessCardTheme {
-        GreetingText("Android", "babycute", "lyz")
+fun SubPart(
+    phone_number: String,
+    social_media_handle: String,
+    email_address: String,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+//        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        SubPartCompose(
+            image_vector = Icons.Filled.Phone,
+            text = phone_number
+        )
+
+        SubPartCompose(
+            image_vector = Icons.Filled.Share,
+            text = social_media_handle
+        )
+
+        SubPartCompose(
+            image_vector = Icons.Filled.Email,
+            text = email_address
+        )
     }
 }
+
+@Composable
+fun SubPartCompose(image_vector: ImageVector, text: String, modifier: Modifier = Modifier) {
+    Row(
+        modifier = Modifier
+            .padding(horizontal = 32.dp),   // bỏ fillMaxWidth
+    ) {
+        Icon(
+            imageVector = image_vector,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp)
+        )
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        Text(
+            text = text,
+            fontSize = 14.sp,
+            textAlign = TextAlign.Start
+        )
+    }
+}
+
+
