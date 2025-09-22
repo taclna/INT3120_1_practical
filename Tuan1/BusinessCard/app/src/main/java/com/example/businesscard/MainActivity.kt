@@ -34,7 +34,6 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    // Dùng Box để MainPart ở giữa, SubPart ở cuối
                     Box(
                         modifier = Modifier.fillMaxSize(),
 
@@ -42,7 +41,7 @@ class MainActivity : ComponentActivity() {
                         MainPart(
                             full_name = "LE CHI ANH TUAN",
                             title = "Student",
-                            modifier = Modifier.align(Alignment.Center) // căn giữa
+                            modifier = Modifier.align(Alignment.Center)
                         )
 
                         SubPart(
@@ -50,7 +49,7 @@ class MainActivity : ComponentActivity() {
                             social_media_handle = "tacl_na",
                             email_address = "23020703@vnu.edu.vn",
                             modifier = Modifier
-                                .align(Alignment.BottomCenter) // xuống cuối cùng
+                                .align(Alignment.BottomCenter)
                                 .padding(bottom = 24.dp)
                         )
                     }

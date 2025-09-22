@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AbsoluteLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/absolute_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="This is an absolute positioned text!"
+        android:layout_x="100dp"
+    android:layout_y="200dp"
+    android:textSize="18sp" />
+
+    <Button
+        android:id="@+id/absolute_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Click Me"
+        android:layout_x="200dp"
+        android:layout_y="400dp" />
+
+</AbsoluteLayout>
