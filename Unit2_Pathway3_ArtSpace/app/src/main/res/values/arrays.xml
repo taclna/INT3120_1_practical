@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <array name="artworks">
+        <item>@drawable/art1</item>
+        <item>@drawable/art2</item>
+        <item>@drawable/art3</item>
+    </array>
+
+    <string-array name="artwork_titles">
+        <item>Starry Night</item>
+        <item>Mona Lisa</item>
+        <item>The Scream</item>
+    </string-array>
+
+    <string-array name="artwork_artists">
+        <item>Vincent van Gogh</item>
+        <item>Leonardo da Vinci</item>
+        <item>Edvard Munch</item>
+    </string-array>
+</resources>
