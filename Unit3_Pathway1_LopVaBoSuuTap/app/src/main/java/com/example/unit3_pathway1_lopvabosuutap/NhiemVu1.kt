@@ -4,5 +4,9 @@ data class Event(
     val title: String,
     val description: String? = null,
     val daypart: Daypart,
-    val durationInMinutes: Int,
-)
+    val durationInMinutes: Int
+) {
+    //Nv7
+    val durationOfEvent: String
+        get() = if (durationInMinutes < 60) "short" else "long"
+}
