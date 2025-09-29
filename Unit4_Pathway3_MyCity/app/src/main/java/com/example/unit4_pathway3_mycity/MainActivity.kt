@@ -1,5 +1,4 @@
-
-package com.example.mycity
+package com.example.unit4_pathway3_mycity
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -36,15 +35,19 @@ fun MyCityApp(cityViewModel: CityViewModel = viewModel()) {
         composable("places/{category}") { backStackEntry ->
             val category = backStackEntry.arguments?.getString("category") ?: ""
             val places = cityViewModel.getPlacesByCategory(category)
-            PlaceListScreen(places) { placeId ->
-                navController.navigate("detail/$placeId")
-            }
+            PlaceListScreen(
+                places = places,
+                onPlaceClick = { placeId -> navController.navigate("detail/$placeId") },
+                onBack = { navController.popBackStack() }
+            )
         }
+
         composable("detail/{placeId}") { backStackEntry ->
             val placeId = backStackEntry.arguments?.getString("placeId")?.toInt() ?: 0
             cityViewModel.getPlaceById(placeId)?.let { place ->
-                PlaceDetailScreen(place)
+                PlaceDetailScreen(place, onBack = { navController.popBackStack() })
             }
         }
+
     }
 }
