@@ -46,7 +46,7 @@ import com.example.juicetracker.R
 import com.example.juicetracker.data.Juice
 import com.example.juicetracker.ui.JuiceTrackerViewModel
 import java.util.Locale
-
+import com.example.juicetracker.data.JuiceColor
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EntryBottomSheet(
@@ -79,6 +79,10 @@ fun EntryBottomSheet(
     }
 }
 
+private fun findColorIndex(color: String): Int {
+    val juiceColor = JuiceColor.valueOf(color)
+    return JuiceColor.values().indexOf(juiceColor)
+}
 @Composable
 fun SheetHeader(modifier: Modifier = Modifier) {
     Column(modifier = modifier.padding(8.dp)) {
@@ -109,6 +113,16 @@ fun SheetForm(
             inputLabel = stringResource(R.string.juice_description),
             fieldValue = juice.description,
             onValueChange = { description -> onUpdateJuice(juice.copy(description = description)) }
+        )
+        ColorSpinnerRow(
+            colorSpinnerPosition = findColorIndex(juice.color),
+            onColorChange = { color ->
+                onUpdateJuice(juice.copy(color = JuiceColor.values()[color].name))
+            }
+        )
+        RatingInputRow(
+            rating = juice.rating,
+            onRatingChange = { rating -> onUpdateJuice(juice.copy(rating = rating)) }
         )
         ButtonRow(
             modifier = Modifier.align(Alignment.CenterHorizontally),
