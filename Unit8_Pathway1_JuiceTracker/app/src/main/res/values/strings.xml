@@ -13,7 +13,7 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
 -->
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">Juice Tracker</string>
     <string name="juice_type">Type of juice</string>
     <string name="delete">Delete</string>
@@ -30,4 +30,5 @@
     <string name="cyan">Cyan</string>
     <string name="yellow">Yellow</string>
     <string name="magenta">Magenta</string>
+    <plurals name="number_of_stars" tools:ignore="MissingQuantity">100</plurals>
 </resources>
