@@ -55,7 +55,7 @@ class OfflineFlightRepository(
     override suspend fun getSingleFavorite(
         departureCode: String,
         destinationCode: String
-    ): Favorite {
+    ): Favorite? {
         return airportDao.getSingleFavorite(departureCode, destinationCode)
     }
 }

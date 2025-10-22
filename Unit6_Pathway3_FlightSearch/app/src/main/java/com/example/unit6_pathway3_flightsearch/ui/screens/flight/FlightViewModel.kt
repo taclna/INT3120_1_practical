@@ -1,113 +1,187 @@
 package com.example.unit6_pathway3_flightsearch.ui.screens.flight
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.unit6_pathway3_flightsearch.FlightSearchApplication
 import com.example.unit6_pathway3_flightsearch.data.FlightRepository
 import com.example.unit6_pathway3_flightsearch.data.UserPreferencesRepository
 import com.example.unit6_pathway3_flightsearch.data.model.Airport
 import com.example.unit6_pathway3_flightsearch.data.model.Favorite
-import com.example.unit6_pathway3_flightsearch.ui.screens.search.AirportSuggestion
-import kotlinx.coroutines.flow.*
+import com.example.unit6_pathway3_flightsearch.data.Flight
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import android.util.Log
 
 class FlightViewModel(
-    private val repository: FlightRepository,
-    private val userPrefRepo: UserPreferencesRepository
+    private val flightRepository: FlightRepository,
+    private val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(FlightUiState(isLoading = true))
-    val uiState: StateFlow<FlightUiState> = _uiState.asStateFlow()
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    private val _query = MutableStateFlow("")
+    private val _selectedAirportCode = MutableStateFlow<String?>(null)
+    val selectedAirportCode: StateFlow<String?> = _selectedAirportCode.asStateFlow()
+
+    val autocompleteSuggestions: StateFlow<List<Airport>> = _searchQuery
+        .flatMapLatest { query ->
+            if (query.isEmpty()) {
+                kotlinx.coroutines.flow.flowOf(emptyList())
+            } else {
+                flightRepository.getAllAirportsFlow(query)
+            }
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000L),
+            initialValue = emptyList()
+        )
+
+    val favoriteRoutes: StateFlow<List<Flight>> = flightRepository.getAllFavoriteFlightsFlow()
+        .flatMapLatest { favorites ->
+            mapFavoritesToFlights(favorites)
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000L),
+            initialValue = emptyList()
+        )
+
+    val destinationFlights: StateFlow<List<Flight>> = combine(
+        _selectedAirportCode,
+        flightRepository.getAllAirportsFlow(),
+        flightRepository.getAllFavoriteFlightsFlow()
+    ) { code, allAirports, favorites ->
+        if (code == null) {
+            emptyList()
+        } else {
+            val departureAirport = allAirports.firstOrNull { it.iata_code == code }
+            if (departureAirport == null) {
+                emptyList()
+            } else {
+                allAirports
+                    .filter { it.iata_code != code }
+                    .map { destinationAirport ->
+                        val isFavorite = favorites.any {
+                            it.departureCode == departureAirport.iata_code &&
+                                    it.destinationCode == destinationAirport.iata_code
+                        }
+                        Flight(
+                            departureCode = departureAirport.iata_code,
+                            departureName = departureAirport.name,
+                            destinationCode = destinationAirport.iata_code,
+                            destinationName = destinationAirport.name,
+                            isFavorite = isFavorite
+                        )
+                    }
+            }
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000L),
+        initialValue = emptyList()
+    )
 
     init {
         viewModelScope.launch {
-            userPrefRepo.userPreferencesFlow
-                .map { it.searchValues }
-                .catch { emit("") }
-                .collect { saved -> _query.value = saved ?: "" }
+            val initialQuery = userPreferencesRepository.userPreferencesFlow.first().searchValues
+            _searchQuery.value = initialQuery
+            if (initialQuery.isNotEmpty()) {
+                try {
+                    val airport = flightRepository.getAirportByCode(initialQuery)
+                    _selectedAirportCode.value = airport.iata_code
+                } catch (e: Exception) {
+                    _selectedAirportCode.value = null
+                }
+            }
         }
-
-        val suggestionsFlow = _query
-            .debounce(200)
-            .distinctUntilChanged()
-            .flatMapLatest { q ->
-                if (q.isBlank()) {
-                    flowOf(emptyList<Airport>())
-                } else {
-                    repository.getAllAirportsFlow(q)
-                }
-            }
-
-        val allAirportsFlow = repository.getAllAirportsFlow()
-
-        val favoritesFlow = repository.getAllFavoriteFlightsFlow()
-
-        combine(suggestionsFlow, allAirportsFlow, favoritesFlow) { suggestions, allAirports, favorites ->
-            Triple(suggestions, allAirports, favorites)
-        }.map { (suggestions, allAirports, favorites) ->
-            val q = _query.value
-            val suggestionModels = suggestions.map { AirportSuggestion(it.iata_code, it.name) }
-            val airportMap = allAirports.associateBy { it.iata_code }
-            val flights = if (q.isBlank()) {
-                favorites.map { fav ->
-                    val depart = airportMap[fav.departureCode]
-                    val dest = airportMap[fav.destinationCode]
-                    FlightItemUiModel(
-                        id = fav.id,
-                        departCode = fav.departureCode,
-                        departName = depart?.name ?: "",
-                        arriveCode = fav.destinationCode,
-                        arriveName = dest?.name ?: "",
-                        isFavorite = true
-                    )
-                }
-            } else {
-                val departAirport = suggestions.find { it.iata_code.equals(q, ignoreCase = true) } ?: airportMap[q]
-                if (departAirport != null) {
-                    allAirports.filter { it.iata_code != departAirport.iata_code }.map { a ->
-                        val isFav = favorites.any { f -> f.departureCode == departAirport.iata_code && f.destinationCode == a.iata_code }
-                        FlightItemUiModel(
-                            id = 0,
-                            departCode = departAirport.iata_code,
-                            departName = departAirport.name,
-                            arriveCode = a.iata_code,
-                            arriveName = a.name,
-                            isFavorite = isFav
-                        )
-                    }
-                } else {
-                    emptyList()
-                }
-            }
-            FlightUiState(
-                searchQuery = q,
-                suggestions = suggestionModels,
-                flights = flights,
-                isLoading = false
-            )
-        }.onEach { state -> _uiState.value = state }.launchIn(viewModelScope)
     }
 
-    fun onQueryChanged(newQuery: String) {
-        _query.value = newQuery
-        viewModelScope.launch { userPrefRepo.updateUserPreferences(newQuery) }
-        _uiState.update { it.copy(isLoading = true) }
+    fun onQueryChange(query: String) {
+        _searchQuery.value = query
+        _selectedAirportCode.value = null
+        viewModelScope.launch {
+            userPreferencesRepository.updateUserPreferences(query)
+        }
     }
 
-    fun toggleFavorite(departCode: String, arriveCode: String) {
+    fun onAirportSelected(airport: Airport) {
+        _searchQuery.value = airport.iata_code
+        _selectedAirportCode.value = airport.iata_code
+        viewModelScope.launch {
+            userPreferencesRepository.updateUserPreferences(airport.iata_code)
+        }
+    }
+
+    fun toggleFavorite(flight: Flight) {
+        Log.d("FlightToggle", "Toggling: ${flight.departureCode} -> ${flight.destinationCode}")
         viewModelScope.launch {
             try {
-                val single = repository.getSingleFavorite(departCode, arriveCode)
-                repository.deleteFavoriteFlight(single)
+                val existingFavorite = flightRepository.getSingleFavorite(
+                    flight.departureCode,
+                    flight.destinationCode
+                )
+                if (existingFavorite == null) {
+                    Log.d("FlightToggle", "Favorite not found. Inserting...")
+                    val newFavorite = Favorite(
+                        departureCode = flight.departureCode,
+                        destinationCode = flight.destinationCode
+                    )
+                    flightRepository.insertFavoriteFlight(newFavorite)
+                    Log.d("FlightToggle", "Insert complete.")
+                } else {
+                    Log.d("FlightToggle", "Favorite found (id: ${existingFavorite.id}). Deleting...")
+                    flightRepository.deleteFavoriteFlight(existingFavorite)
+                    Log.d("FlightToggle", "Delete complete.")
+                }
             } catch (e: Exception) {
-                val fav = Favorite(departureCode = departCode, destinationCode = arriveCode)
-                repository.insertFavoriteFlight(fav)
+                Log.e("FlightToggle", "CRITICAL ERROR during toggle: ${e.message}", e)
             }
         }
     }
 
-    fun onSuggestionSelected(iataCode: String) {
-        onQueryChanged(iataCode)
+    private fun mapFavoritesToFlights(favorites: List<Favorite>): Flow<List<Flight>> {
+        return kotlinx.coroutines.flow.flow {
+            val flightList = favorites.mapNotNull { fav ->
+                try {
+                    val departure = flightRepository.getAirportByCode(fav.departureCode)
+                    val destination = flightRepository.getAirportByCode(fav.destinationCode)
+                    Flight(
+                        id = fav.id,
+                        departureCode = departure.iata_code,
+                        departureName = departure.name,
+                        destinationCode = destination.iata_code,
+                        destinationName = destination.name,
+                        isFavorite = true
+                    )
+                } catch (e: Exception) {
+                    null
+                }
+            }
+            emit(flightList)
+        }
+    }
+
+    companion object {
+        val Factory: ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                val application = (this[APPLICATION_KEY] as FlightSearchApplication)
+                val flightRepository = application.appContainer.flightRepository
+                val userPreferencesRepository = UserPreferencesRepository.create(application.applicationContext)
+                FlightViewModel(flightRepository, userPreferencesRepository)
+            }
+        }
     }
 }

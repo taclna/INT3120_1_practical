@@ -21,5 +21,5 @@ interface FlightRepository {
     suspend fun insertFavoriteFlight(flight: Favorite)
     suspend fun deleteFavoriteFlight(flight: Favorite)
 
-    suspend fun getSingleFavorite(departureCode: String, destinationCode: String): Favorite
+    suspend fun getSingleFavorite(departureCode: String, destinationCode: String): Favorite?
 }

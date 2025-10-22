@@ -34,7 +34,7 @@ interface FlightDao {
             AND destination_code = :destinationCode
         """
     )
-    suspend fun getSingleFavorite(departureCode: String, destinationCode: String): Favorite
+    suspend fun getSingleFavorite(departureCode: String, destinationCode: String): Favorite?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertFavoriteFlight(flight: Favorite)
